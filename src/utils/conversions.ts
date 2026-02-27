@@ -5,3 +5,12 @@ export function toBigIntLE(bytes: Uint8Array): bigint {
     }
     return result;
 }
+
+export function toBytesLE(value: bigint, length: number): Uint8Array {
+    const bytes = new Uint8Array(length);
+    for (let i = 0; i < length; i++) {
+        bytes[i] = Number(value & 0xFFn);
+        value >>= 8n;
+    }
+    return bytes;
+}
