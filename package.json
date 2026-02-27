@@ -1,0 +1,43 @@
+{
+  "name": "pqxdh",
+  "version": "0.1.0",
+  "description": "Post-Quantum Extended Diffie-Hellman protocol implementation.",
+  "homepage": "https://github.com/LookAtFr3sn0/pqxdh#readme",
+  "bugs": {
+    "url": "https://github.com/LookAtFr3sn0/pqxdh/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LookAtFr3sn0/pqxdh.git"
+  },
+  "license": "MIT",
+  "author": "LookAtFr3sn0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "@noble/post-quantum": "^0.5.4"
+  }
+}
