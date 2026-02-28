@@ -1,7 +1,5 @@
-import type { Point } from "../types/parameters.ts";
-
-const FIELD_MODULUS_25519 = (1n << 255n) - 19n;
-const FIELD_MODULUS_448 = (1n << 448n) - (1n << 224n) - 1n;
+import type { point, curve } from "../types/parameters.ts";
+import { FIELD_MODULUS_25519, FIELD_MODULUS_448, Q_25519, Q_448 } from "../types/parameters.ts";
 
 export function toBigIntLE(bytes: Uint8Array): bigint {
     let result = 0n;
@@ -55,7 +53,7 @@ function uToY(u: bigint, fieldModulus: bigint, isCurve25519: boolean): bigint {
     return (y + fieldModulus) % fieldModulus;
 }
 
-export function convertMont(u: Uint8Array): Point {
+export function convertMont(u: Uint8Array): point {
     if (u.length !== 32 && u.length !== 56) {
         throw new Error("Montgomery u-coordinate must be 32 bytes (Curve25519) or 56 bytes (Curve448)");
     }
@@ -72,9 +70,26 @@ export function convertMont(u: Uint8Array): Point {
 
     const masked = toBigIntLE(maskedBytes);
 
-    const point: Point = {
+    const point: point = {
         y: uToY(masked, fieldModulus, isCurve25519),
         sign: 0
     };
     return point;
+}
+
+export function calculateKeyPair(k: Uint8Array, curve: curve): { A: point; a: bigint } {
+    const u = curve === 'curve25519' ? new Uint8Array(32) : new Uint8Array(56);
+    u[0] = curve === 'curve25519' ? 9 : 5;
+    const E = convertMont(u);
+    const A: point = {
+        y: E.y,
+        sign: 0
+    };
+    let a;
+    if (E.sign === 1) {
+        a = -toBigIntLE(k) % (curve === 'curve25519' ? Q_25519 : Q_448);
+    } else {
+        a = toBigIntLE(k) % (curve === 'curve25519' ? Q_25519 : Q_448);
+    }
+    return { A, a };
 }

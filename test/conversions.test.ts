@@ -1,9 +1,7 @@
 import { test, expect } from 'vitest';
-import { convertMont, inverseMod, toBigIntLE, toBytesLE } from "../src/utils/conversions.ts";
-import type { Point } from '../src/types/parameters.js';
-
-const FIELD_MODULUS_25519 = (1n << 255n) - 19n;
-const FIELD_MODULUS_448 = (1n << 448n) - (1n << 224n) - 1n;
+import { calculateKeyPair, convertMont, inverseMod, toBigIntLE, toBytesLE } from "../src/utils/conversions.ts";
+import type { point } from '../src/types/parameters.js';
+import { FIELD_MODULUS_25519, FIELD_MODULUS_448, Q_25519, Q_448 } from '../src/types/parameters.js';
 
 test('toBigIntLE should convert Uint8Array to bigint correctly', () => {
     const bytes = new Uint8Array([0x01, 0x02, 0x03]);
@@ -98,7 +96,7 @@ test('convertMont should reject invalid inputs', () => {
 test('convertMont should map Curve448 to a valid Edwards y', () => {
     const uBytes = new Uint8Array(56);
     uBytes[0] = 5;
-    const point: Point = convertMont(uBytes);
+    const point: point = convertMont(uBytes);
 
     const u = 5n;
     const rhs = (1n + u) % FIELD_MODULUS_448;
@@ -106,4 +104,58 @@ test('convertMont should map Curve448 to a valid Edwards y', () => {
 
     expect(point.sign).toBe(0);
     expect(lhs).toBe(rhs);
+});
+
+test('calculateKeyPair should return expected A and reduced a for curve25519', () => {
+    const k = new Uint8Array(32);
+    k[0] = 1;
+    k[31] = 0x7f;
+
+    const { A, a } = calculateKeyPair(k, 'curve25519');
+
+    const baseU = new Uint8Array(32);
+    baseU[0] = 9;
+    const expectedBase = convertMont(baseU);
+
+    expect(A).toEqual({ y: expectedBase.y, sign: 0 });
+    expect(a).toBe(toBigIntLE(k) % Q_25519);
+});
+
+test('calculateKeyPair should return expected A and reduced a for curve448', () => {
+    const k = new Uint8Array(56);
+    k[0] = 5;
+    k[55] = 0xaa;
+
+    const { A, a } = calculateKeyPair(k, 'curve448');
+
+    const baseU = new Uint8Array(56);
+    baseU[0] = 5;
+    const expectedBase = convertMont(baseU);
+
+    expect(A).toEqual({ y: expectedBase.y, sign: 0 });
+    expect(a).toBe(toBigIntLE(k) % Q_448);
+});
+
+test('calculateKeyPair should reduce large scalar modulo curve order', () => {
+    const k25519 = toBytesLE(Q_25519 + 123n, 64);
+    const k448 = toBytesLE(Q_448 + 456n, 80);
+
+    const pair25519 = calculateKeyPair(k25519, 'curve25519');
+    const pair448 = calculateKeyPair(k448, 'curve448');
+
+    expect(pair25519.a).toBe(123n);
+    expect(pair448.a).toBe(456n);
+});
+
+test('calculateKeyPair should return zero scalar when k is zero', () => {
+    const zero25519 = new Uint8Array(32);
+    const zero448 = new Uint8Array(56);
+
+    const pair25519 = calculateKeyPair(zero25519, 'curve25519');
+    const pair448 = calculateKeyPair(zero448, 'curve448');
+
+    expect(pair25519.a).toBe(0n);
+    expect(pair448.a).toBe(0n);
+    expect(pair25519.A.sign).toBe(0);
+    expect(pair448.A.sign).toBe(0);
 });
