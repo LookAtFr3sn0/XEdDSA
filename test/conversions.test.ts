@@ -51,6 +51,8 @@ test('inverseMod should return multiplicative inverse modulo m', () => {
     const a = 42n;
     const inv = inverseMod(a, m);
     expect((a * inv) % m).toBe(1n);
+    expect(inverseMod(2n, 5n)).toBe(3n);
+    expect(inverseMod(48n, 101n)).toBe(40n);
 });
 
 test('inverseMod should return 0 for zero input per XEdDSA spec', () => {
