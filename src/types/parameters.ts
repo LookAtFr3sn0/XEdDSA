@@ -1,4 +1,4 @@
-export type P = {
+export type Point = {
     y: bigint;
     sign: number;
 }

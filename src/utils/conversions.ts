@@ -1,4 +1,4 @@
-import type { P } from "../types/parameters.ts";
+import type { Point } from "../types/parameters.ts";
 
 const FIELD_MODULUS_25519 = (1n << 255n) - 19n;
 const FIELD_MODULUS_448 = (1n << 448n) - (1n << 224n) - 1n;
@@ -55,7 +55,7 @@ function uToY(u: bigint, fieldModulus: bigint, isCurve25519: boolean): bigint {
     return (y + fieldModulus) % fieldModulus;
 }
 
-export function convertMont(u: Uint8Array): P {
+export function convertMont(u: Uint8Array): Point {
     if (u.length !== 32 && u.length !== 56) {
         throw new Error("Montgomery u-coordinate must be 32 bytes (Curve25519) or 56 bytes (Curve448)");
     }
@@ -72,9 +72,9 @@ export function convertMont(u: Uint8Array): P {
 
     const masked = toBigIntLE(maskedBytes);
 
-    const p: P = {
+    const point: Point = {
         y: uToY(masked, fieldModulus, isCurve25519),
         sign: 0
     };
-    return p;
+    return point;
 }

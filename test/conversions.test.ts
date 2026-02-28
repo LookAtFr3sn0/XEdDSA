@@ -1,5 +1,6 @@
 import { test, expect } from 'vitest';
 import { convertMont, inverseMod, toBigIntLE, toBytesLE } from "../src/utils/conversions.ts";
+import type { Point } from '../src/types/parameters.js';
 
 const FIELD_MODULUS_25519 = (1n << 255n) - 19n;
 const FIELD_MODULUS_448 = (1n << 448n) - (1n << 224n) - 1n;
@@ -97,7 +98,7 @@ test('convertMont should reject invalid inputs', () => {
 test('convertMont should map Curve448 to a valid Edwards y', () => {
     const uBytes = new Uint8Array(56);
     uBytes[0] = 5;
-    const point = convertMont(uBytes);
+    const point: Point = convertMont(uBytes);
 
     const u = 5n;
     const rhs = (1n + u) % FIELD_MODULUS_448;
