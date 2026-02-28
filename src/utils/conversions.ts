@@ -1,4 +1,4 @@
-import type { point, curve } from "../types/parameters.ts";
+import type { point, curve, hash } from "../types/parameters.ts";
 import { FIELD_MODULUS_25519, FIELD_MODULUS_448, Q_25519, Q_448 } from "../types/parameters.ts";
 
 export function toBigIntLE(bytes: Uint8Array): bigint {
@@ -92,4 +92,19 @@ export function calculateKeyPair(k: Uint8Array, curve: curve): { A: point; a: bi
         a = toBigIntLE(k) % (curve === 'curve25519' ? Q_25519 : Q_448);
     }
     return { A, a };
+}
+
+export async function baseHash(X: Uint8Array, hash: hash): Promise<Uint8Array> {
+    if (hash === 'sha-256') {
+        return new Uint8Array(await crypto.subtle.digest('SHA-256', X));
+    } else {
+        return new Uint8Array(await crypto.subtle.digest('SHA-512', X));
+    }
+}
+
+export async function hash(X: Uint8Array, i: number, hash: hash): Promise<Uint8Array> {
+    const data = new Uint8Array(X.length + 1);
+    data.set(X, 0);
+    data[X.length] = i;
+    return await baseHash(data, hash);
 }
