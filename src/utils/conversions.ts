@@ -95,10 +95,11 @@ export function calculateKeyPair(k: Uint8Array, curve: curve): { A: point; a: bi
 }
 
 export async function baseHash(X: Uint8Array, hash: hash): Promise<Uint8Array> {
+    const input = X.slice().buffer;
     if (hash === 'sha-256') {
-        return new Uint8Array(await crypto.subtle.digest('SHA-256', X));
+        return new Uint8Array(await crypto.subtle.digest('SHA-256', input));
     } else {
-        return new Uint8Array(await crypto.subtle.digest('SHA-512', X));
+        return new Uint8Array(await crypto.subtle.digest('SHA-512', input));
     }
 }
 
