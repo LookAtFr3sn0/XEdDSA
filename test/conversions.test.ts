@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { baseHash, calculateKeyPair, convertMont, hash, inverseMod, toBigIntLE, toBytesLE } from "../src/utils/conversions.ts";
+import { baseHash, calculateKeyPair, convertMont, elligator2, hash, inverseMod, legendreSymbol, mod, modPow, toBigIntLE, toBytesLE } from "../src/utils/conversions.ts";
 import type { point } from '../src/types/parameters.js';
 import { FIELD_MODULUS_25519, FIELD_MODULUS_448, Q_25519, Q_448 } from '../src/types/parameters.js';
 
@@ -215,4 +215,44 @@ test('hash should use 56-byte domain prefix for curve448', async () => {
     const actual = await hash(X, i, 'sha-512', 'curve448');
 
     expect(actual).toEqual(expected);
+});
+
+test('mod function should return correct modulus for positive and negative inputs', () => {
+    expect(mod(5n, 3n)).toBe(2n);
+    expect(mod(-1n, 5n)).toBe(4n);
+    expect(mod(-6n, 4n)).toBe(2n);
+    expect(mod(10n, 7n)).toBe(3n);
+});
+
+test('modPow function should compute modular exponentiation correctly', () => {
+    expect(modPow(2n, 3n, 5n)).toBe(3n);
+    expect(modPow(3n, 4n, 7n)).toBe(4n);
+    expect(modPow(5n, 0n, 13n)).toBe(1n);
+    expect(modPow(10n, 5n, 17n)).toBe(6n);
+});
+
+test('legendreSymbol should return correct values for quadratic residues', () => {
+    expect(legendreSymbol(0n, 3n)).toBe(0);
+    expect(legendreSymbol(1n, 3n)).toBe(1);
+    expect(legendreSymbol(2n, 3n)).toBe(-1);
+    expect(legendreSymbol(0n, 5n)).toBe(0);
+    expect(legendreSymbol(1n, 5n)).toBe(1);
+    expect(legendreSymbol(2n, 5n)).toBe(-1);
+    expect(legendreSymbol(3n, 5n)).toBe(-1);
+    expect(legendreSymbol(4n, 5n)).toBe(1);
+});
+
+test('legendreSymbol should throw error if p is not prime', () => {
+    expect(() => legendreSymbol(1n, 4n)).toThrow("p must be an odd prime for Legendre symbol");
+    expect(() => legendreSymbol(2n, 6n)).toThrow("p must be an odd prime for Legendre symbol");
+});
+
+test('elligator2 should return a valid u for curve25519', () => {
+    expect(elligator2(0n, 'curve25519')).toBe(0n);
+    //todo Add additional test cases with known outputs for elligator2 on curve25519
+});
+
+test('elligator2 should return a valid u for curve448', () => {
+    expect(elligator2(0n, 'curve448')).toBe(0n);
+    //todo Add additional test cases with known outputs for elligator2 on curve448
 });

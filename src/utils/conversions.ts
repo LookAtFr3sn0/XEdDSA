@@ -1,5 +1,5 @@
 import type { point, curve, hash } from "../types/parameters.ts";
-import { FIELD_MODULUS_25519, FIELD_MODULUS_448, Q_25519, Q_448 } from "../types/parameters.ts";
+import { A_25519, A_448, FIELD_MODULUS_25519, FIELD_MODULUS_448, Q_25519, Q_448 } from "../types/parameters.ts";
 
 export function toBigIntLE(bytes: Uint8Array): bigint {
     let result = 0n;
@@ -116,4 +116,54 @@ export async function hash(X: Uint8Array, i: number, hash: hash, curve: curve = 
     data.set(prefix, 0);
     data.set(X, prefix.length);
     return await baseHash(data, hash);
+}
+
+export function mod(a: bigint, p: bigint): bigint {
+    return ((a % p) + p) % p;
+}
+
+export function modPow(base: bigint, exponent: bigint, modulus: bigint): bigint {
+    if (modulus === 1n) return 0n;
+
+    let result = 1n;
+    let b = mod(base, modulus);
+    let e = exponent;
+
+    while (e > 0n) {
+        if ((e & 1n) === 1n) {
+            result = (result * b) % modulus;
+        }
+        b = (b * b) % modulus;
+        e >>= 1n;
+    }
+
+    return result;
+}
+
+export function legendreSymbol(a: bigint, p: bigint): number {
+    if (p <= 2n || (p & 1n) === 0n) {
+        throw new Error("p must be an odd prime for Legendre symbol");
+    }
+    
+    const aNorm = mod(a, p);
+    if (aNorm === 0n) return 0;
+
+    const value = modPow(aNorm, (p - 1n) / 2n, p);
+    if (value === 1n) return 1;
+    if (value === p - 1n) return -1;
+
+    throw new Error("p must be an odd prime for Legendre symbol");
+}
+
+export function elligator2(r: bigint, curve: curve): bigint {
+    const fieldModulus = curve === 'curve25519' ? FIELD_MODULUS_25519 : FIELD_MODULUS_448;
+    const A = curve === 'curve25519' ? A_25519 : A_448;
+    const n = curve === 'curve25519' ? 2n : fieldModulus - 1n;
+    const u1 = mod(-A * inverseMod(1n + n * r * r, fieldModulus), fieldModulus);
+    const w1 = mod(u1 * mod(u1 * u1 + A * u1 + 1n, fieldModulus), fieldModulus);
+    if (legendreSymbol(w1, fieldModulus) === -1) {
+        const u2 = mod(-A - u1, fieldModulus);
+        return u2;
+    }
+    return u1;
 }
