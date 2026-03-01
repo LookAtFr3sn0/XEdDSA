@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { calculateKeyPair, convertMont, inverseMod, toBigIntLE, toBytesLE } from "../src/utils/conversions.ts";
+import { baseHash, calculateKeyPair, convertMont, hash, inverseMod, toBigIntLE, toBytesLE } from "../src/utils/conversions.ts";
 import type { point } from '../src/types/parameters.js';
 import { FIELD_MODULUS_25519, FIELD_MODULUS_448, Q_25519, Q_448 } from '../src/types/parameters.js';
 
@@ -158,4 +158,61 @@ test('calculateKeyPair should return zero scalar when k is zero', () => {
     expect(pair448.a).toBe(0n);
     expect(pair25519.A.sign).toBe(0);
     expect(pair448.A.sign).toBe(0);
+});
+
+test('hash should reject negative i', async () => {
+    await expect(hash(new Uint8Array([1]), -1, 'sha-512')).rejects.toThrow('hash index i must be a non-negative integer');
+});
+
+
+test('hash should implement hash_i for curve25519 as hash((0xFF..FF - i) || X)', async () => {
+    const X = new Uint8Array([0x11, 0x22, 0x33, 0x44]);
+    const i = 1;
+
+    const prefix = new Uint8Array(32).fill(0xff);
+    prefix[0] = 0xfe;
+
+    const expectedInput = new Uint8Array(prefix.length + X.length);
+    expectedInput.set(prefix, 0);
+    expectedInput.set(X, prefix.length);
+
+    const expected = await baseHash(expectedInput, 'sha-512');
+    const actual = await hash(X, i, 'sha-512', 'curve25519');
+
+    expect(actual).toEqual(expected);
+});
+
+test('hash should handle carry across bytes in prefix subtraction', async () => {
+    const X = new Uint8Array([0xaa, 0xbb]);
+    const i = 257;
+
+    const prefix = new Uint8Array(32).fill(0xff);
+    prefix[0] = 0xfe;
+    prefix[1] = 0xfe;
+
+    const expectedInput = new Uint8Array(prefix.length + X.length);
+    expectedInput.set(prefix, 0);
+    expectedInput.set(X, prefix.length);
+
+    const expected = await baseHash(expectedInput, 'sha-256');
+    const actual = await hash(X, i, 'sha-256', 'curve25519');
+
+    expect(actual).toEqual(expected);
+});
+
+test('hash should use 56-byte domain prefix for curve448', async () => {
+    const X = new Uint8Array([0x01, 0x02, 0x03]);
+    const i = 2;
+
+    const prefix = new Uint8Array(56).fill(0xff);
+    prefix[0] = 0xfd;
+
+    const expectedInput = new Uint8Array(prefix.length + X.length);
+    expectedInput.set(prefix, 0);
+    expectedInput.set(X, prefix.length);
+
+    const expected = await baseHash(expectedInput, 'sha-512');
+    const actual = await hash(X, i, 'sha-512', 'curve448');
+
+    expect(actual).toEqual(expected);
 });

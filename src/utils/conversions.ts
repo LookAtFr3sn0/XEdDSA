@@ -103,9 +103,17 @@ export async function baseHash(X: Uint8Array, hash: hash): Promise<Uint8Array> {
     }
 }
 
-export async function hash(X: Uint8Array, i: number, hash: hash): Promise<Uint8Array> {
-    const data = new Uint8Array(X.length + 1);
-    data.set(X, 0);
-    data[X.length] = i;
+export async function hash(X: Uint8Array, i: number, hash: hash, curve: curve = 'curve25519'): Promise<Uint8Array> {
+    if (!Number.isInteger(i) || i < 0) throw new Error("hash index i must be a non-negative integer");
+
+    const bBytes = curve === 'curve25519' ? 32 : 56;
+    const max = (1n << BigInt(8 * bBytes)) - 1n;
+    const prefixed = max - BigInt(i);
+    if (prefixed < 0n) throw new Error("hash index i is too large for selected curve domain");
+
+    const prefix = toBytesLE(prefixed, bBytes);
+    const data = new Uint8Array(prefix.length + X.length);
+    data.set(prefix, 0);
+    data.set(X, prefix.length);
     return await baseHash(data, hash);
 }
